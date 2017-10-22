@@ -297,16 +297,46 @@ DRBMTrainer.dataMeanY = function(drbm, data, yindex) {
 };
 
 /*
- * Optimizer: Adam
+ * Optimizer: Adamax
  */
 function DRBMOptimizer(drbm) {
-    
-}
+	this.alpha = 0.001;
+	this.beta1 = 0.9;
+	this.beta2 = 0.999;
+	this.epsilon = 1E-08;
+        
+        this.iteration = 1;
+        
+        this.momentBias1["h"] = new Float32Array(drbm.hsize);
+        this.momentBias1["y"] = new Float32Array(drbm.ysize);
+        this.momentWeight1["xh"] = new Float32Array(drbm.xsize * drbm.hsize);
+        this.momentWeight1["hy"] = new Float32Array(drbm.hsize * drbm.ysize);
 
-DRBMOptimizer.prototype.deltaBias = function(name, index, gradient) {
-    
+        this.momentBias2["h"] = new Float32Array(drbm.hsize);
+        this.momentBias2["y"] = new Float32Array(drbm.ysize);
+        this.momentWeight2["xh"] = new Float32Array(drbm.xsize * drbm.hsize);
+        this.momentWeight2["hy"] = new Float32Array(drbm.hsize * drbm.ysize);
+        
+        this.weightLength["xh"] = [drbm.xsize, drbm.hsize];
+        this.weightLength["hy"] = [drbm.hsize, drbm.ysize];
+
 };
 
-DRBMOptimizer.prototype.deltaWeight = function(name, i, j, gradient) {
+DRBMOptimizer.prototype.deltaBias = function(name, index, gradient) {
+    var m = this.momentBias1[name][index] = this.beta1 * this.momentBias1[name][index] + (1.0 - this.beta1) * gradient;
+    var v = this.momentBias2[name][index] = Math.max(this.beta2 * this.momentBias2[name][index], Math.abs(gradient));
+    var delta = this.alpha / (1.0 - Math.pow(this.beta, this.iteration)) * m / v;
     
+    return delta;
+};
+
+
+DRBMOptimizer.prototype.deltaWeight = function(name, i, j, gradient) {
+    var index = i * this.weightLength[name][1] + j;
+    
+    var m = this.momentWeight1[name][index] = this.beta1 * this.momentWeight1[name][index] + (1.0 - this.beta1) * gradient;
+    var v = this.momentWeight2[name][index] = Math.max(this.beta2 * this.momentWeight2[name][index], Math.abs(gradient));
+    var delta = this.alpha / (1.0 - Math.pow(this.beta, this.iteration)) * m / v;
+    
+    return delta;
 };

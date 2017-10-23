@@ -1,8 +1,3 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 "use strict";
 
@@ -137,7 +132,7 @@ DRBM.prototype.expectedValueHGivenZ = function(hindex, z) {
     var value = 0.0;
     for (var k = 0; k < this.ysize; k++) {
         var k_val = Math.exp(this.getBias("y", k));
-        for (var l of lindex) { // FIXME: for..in -> for..of
+        for (var l of lindex) {
             k_val *= Math.cosh(this.muJK(l, k));
         }
         k_val *= Math.sinh(this.muJK(hindex, k));
@@ -159,7 +154,7 @@ DRBM.prototype.expectedValueHYGivenZ = function(hindex, yindex, z) {
     }, (v, k) => k);
     lindex.splice(hindex, 1);
     var value = Math.exp(this.getBias("y", yindex));
-    for (var l of lindex) { // FIXME: for..in -> for..of
+    for (var l of lindex) {
         value *= Math.cosh(this.muJK(l, yindex));
     }
     value *= Math.sinh(this.muJK(hindex, yindex));
@@ -178,7 +173,7 @@ DRBM.prototype.expectedValueYGivenZ = function(yindex, z) {
         length: this.hsize
     }, (v, k) => k);
     var value = Math.exp(this.getBias("y", yindex));
-    for (var l of lindex) { // FIXME: for..in -> for..of
+    for (var l of lindex) {
         value *= Math.cosh(this.muJK(l, yindex));
     }
     value /= z;
@@ -228,7 +223,6 @@ DRBMTrainer.prototype.train = function(drbm, data, learning_rate) {
     var z = drbm.normalizeConstantDiv2H();
     // Online Learning(SGD)
     // Gradient
-    // FIXME: 勾配計算と交信は同時にやったらダメ
     for (var i = 0; i < drbm.xsize; i++) {
         for (var j = 0; j < drbm.hsize; j++) {
             var gradient = this.dataMeanXH(drbm, data, i, j) - drbm.expectedValueXHGivenZ(i, j, z);

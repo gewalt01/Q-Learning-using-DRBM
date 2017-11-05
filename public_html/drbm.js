@@ -355,7 +355,7 @@ DRBMTrainer.prototype.dataMeanY = function(drbm, data, yindex) {
  * Optimizer: Adamax
  */
 function DRBMOptimizer(drbm) {
-    this.alpha = 0.001;
+    this.alpha = 0.002;
     this.beta1 = 0.9;
     this.beta2 = 0.999;
     this.epsilon = 1E-08;
@@ -392,7 +392,7 @@ DRBMOptimizer.prototype.deltaBias = function(name, index, gradient) {
 
 DRBMOptimizer.prototype.deltaWeight = function(name, i, j, gradient) {
     var m = this.momentWeight1[name][i][j] = this.beta1 * this.momentWeight1[name][i][j] + (1.0 - this.beta1) * gradient;
-    var v = this.momentWeight2[name][j][j] = Math.max(this.beta2 * this.momentWeight2[name][i][j], Math.abs(gradient));
+    var v = this.momentWeight2[name][i][j] = Math.max(this.beta2 * this.momentWeight2[name][i][j], Math.abs(gradient));
     var delta = this.alpha / (1.0 - Math.pow(this.beta1, this.iteration)) * m / (v + this.epsilon);
     return delta;
 };

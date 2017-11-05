@@ -12,5 +12,18 @@ and open the template in the editor.
     </head>
     <body>
         <div>TODO write content</div>
+        <script src="drbm.js"></script>
+        <script>
+            var drbm = new DRBM(5, 5, 5);
+            var data ={"x": [1, 1, 1, 1, 1], "y" : 1};
+            drbm.node["x"] = data["x"]
+            console.log([drbm.condProbY(0), drbm.condProbY(1), drbm.condProbY(2), drbm.condProbY(3), drbm.condProbY(4)]);
+            var trainer = new DRBMTrainer(drbm);
+            for(var i = 0; i < 300; i++) {
+                trainer.train(drbm, data, 0.01);
+                console.log([drbm.condProbY(0), drbm.condProbY(1), drbm.condProbY(2), drbm.condProbY(3), drbm.condProbY(4)]);
+            }
+        </script>
     </body>
 </html>
+ 

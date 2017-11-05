@@ -10,19 +10,23 @@ function DRBM(xsize, hsize, ysize) {
     this.hsize = hsize;
     this.ysize = ysize;
     this.node = {};
-    this.node["x"] = new Float32Array(xsize);
-    this.node["h"] = new Float32Array(hsize);
-    this.node["y"] = new Float32Array(ysize);
+    this.node["x"] = (new Float64Array(xsize)).fill(0.0);
+    this.node["h"] = (new Float64Array(hsize)).fill(0.0);
+    this.node["y"] = (new Float64Array(ysize)).fill(0.0);
     this.bias = {};
-    this.bias["h"] = new Float32Array(hsize);
-    this.bias["y"] = new Float32Array(ysize);
+    this.bias["h"] = (new Float64Array(hsize)).fill(0.0);
+    this.bias["y"] = (new Float64Array(ysize)).fill(0.0);
     this.weight = {};
     this.weight["xh"] = new Array(xsize);
-    for(var i = 0; i < this.weight["xh"].length; i++)
-        this.weight["xh"][i] = new Float32Array(hsize);
+    for(var i = 0; i < this.weight["xh"].length; i++){
+        this.weight["xh"][i] = (new Float64Array(hsize)).fill(0.0)
+        this.weight["xh"][i] = this.weight["xh"][i].map(x=>{return Math.random() * 0.01})
+    }
     this.weight["hy"] = new Array(xsize);
-    for(var j = 0; j < this.weight["hy"].length; j++)
-        this.weight["hy"][j] = new Float32Array(ysize);
+    for(var j = 0; j < this.weight["hy"].length; j++) {
+        this.weight["hy"][j] = (new Float64Array(ysize)).fill(0.0);
+        this.weight["hy"][j] = this.weight["hy"][j].map(x=>{return Math.random() * 0.01})
+    }
 };
 
 /*
@@ -43,7 +47,7 @@ DRBM.prototype.normalizeConstantDiv2H = function() {
     for (var k = 0; k < this.ysize; k++) {
         var k_val = Math.exp(this.bias["y"][k]);
         for (var j = 0; j < this.hsize; j++) {
-            k_val += Math.cosh(this.muJK(j, k));
+            k_val *= Math.cosh(this.muJK(j, k));
         }
         value += k_val;
     }
@@ -64,16 +68,13 @@ DRBM.prototype.condProbY = function(yindex) {
     return value;
 };
 
-DRBM.prototype.condProbYGivenZ = function(yindex) {
-    var z_k = this.normalizeConstantDiv2H();
+DRBM.prototype.condProbYGivenZ = function(yindex, z) {
+    var z_k = z;
     var potential = 0.0; {
-        var k_val = Math.exp(this.bias["y"][k]);
+        var k_val = Math.exp(this.bias["y"][yindex]);
         for (var j = 0; j < this.hsize; j++) {
-            var mu_j = this.bias["h"][j] * this.weight["hy"][j][yindex];
-            for (var i = 0; i < this.xsize; i++) {
-                mu_j += this.weight["xh"][i][j];
-            }
-            k_val += Math.cosh(mu_j);
+            var mu_j = this.muJK(j, yindex);
+            k_val *= Math.cosh(mu_j);
         }
         potential += k_val;
     }
@@ -156,15 +157,15 @@ DRBM.prototype.expectedValueYGivenZ = function(yindex, z) {
 
 function DRBMTrainer(drbm) {
     this.gradientBias = {};
-    this.gradientBias["h"] = new Float32Array(drbm.hsize);
-    this.gradientBias["y"] = new Float32Array(drbm.ysize);
+    this.gradientBias["h"] = new Float64Array(drbm.hsize);
+    this.gradientBias["y"] = new Float64Array(drbm.ysize);
     this.gradientWeight = {};
     this.gradientWeight["xh"] = new Array(drbm.xsize);
-    for(var i = 0; i < gradientWeight["xh"].length; i++)
-        this.gradientWeight["xh"][i] = new Float32Array(drbm.hsize);
+    for(var i = 0; i < this.gradientWeight["xh"].length; i++)
+        this.gradientWeight["xh"][i] = new Float64Array(drbm.hsize);
     this.gradientWeight["hy"] = new Array(drbm.hsize);
-    for(var j = 0; j < gradientWeight["hy"].length; j++)
-        this.gradientWeight["hy"][j] = new Float32Array(drbm.ysize);
+    for(var j = 0; j < this.gradientWeight["hy"].length; j++)
+        this.gradientWeight["hy"][j] = new Float64Array(drbm.ysize);
     this.optimizer = new DRBMOptimizer(drbm);
 };
 
@@ -175,6 +176,7 @@ function DRBMTrainer(drbm) {
  */
 DRBMTrainer.prototype.train = function(drbm, data, learning_rate) {
     // TODO: 学習率で制御しましょうか?(正: 学習, 負: 忘却)
+    drbm.node["x"] = data["x"]
     var z = drbm.normalizeConstantDiv2H();
     // Online Learning(SGD)
     // Gradient
@@ -276,25 +278,26 @@ function DRBMOptimizer(drbm) {
     this.epsilon = 1E-08;
     this.iteration = 1;
     this.momentBias1 = {};
-    this.momentBias1["h"] = new Float32Array(drbm.hsize);
-    this.momentBias1["y"] = new Float32Array(drbm.ysize);
+    this.momentBias1["h"] = (new Float64Array(drbm.hsize)).fill(0.0);
+    this.momentBias1["y"] = (new Float64Array(drbm.ysize)).fill(0.0);
     this.momentWeight1 = {};
     this.momentWeight1["xh"] = new Array(drbm.xsize);
     for(var i = 0; i < this.momentWeight1["xh"].length; i++)
-         this.momentWeight1["xh"][i] = new Float32Array(drbm.hsize);
+         this.momentWeight1["xh"][i] = (new Float64Array(drbm.hsize)).fill(0.0);
     this.momentWeight1["hy"] = new Array(drbm.xsize);
     for(var j = 0; j < this.momentWeight1["hy"].length; j++)
-         this.momentWeight1["hy"][j] = new Float32Array(drbm.hsize);
+         this.momentWeight1["hy"][j] = (new Float64Array(drbm.hsize)).fill(0.0);
+
     this.momentBias2 = {};
-    this.momentBias2["h"] = new Float32Array(drbm.hsize);
-    this.momentBias2["y"] = new Float32Array(drbm.ysize);
+    this.momentBias2["h"] = (new Float64Array(drbm.hsize)).fill(0.0);
+    this.momentBias2["y"] = (new Float64Array(drbm.ysize)).fill(0.0);
     this.momentWeight2 = {};
     this.momentWeight2["xh"] = new Array(drbm.xsize);
     for(var i = 0; i < this.momentWeight2["xh"].length; i++)
-         this.momentWeight2["xh"][i] = new Float32Array(drbm.hsize);
+         this.momentWeight2["xh"][i] = (new Float64Array(drbm.hsize)).fill(0.0);
     this.momentWeight2["hy"] = new Array(drbm.xsize);
     for(var j = 0; j < this.momentWeight2["hy"].length; j++)
-         this.momentWeight2["hy"][j] = new Float32Array(drbm.hsize);
+         this.momentWeight2["hy"][j] = (new Float64Array(drbm.hsize)).fill(0.0);
 };
 
 DRBMOptimizer.prototype.deltaBias = function(name, index, gradient) {
@@ -305,8 +308,10 @@ DRBMOptimizer.prototype.deltaBias = function(name, index, gradient) {
 };
 
 DRBMOptimizer.prototype.deltaWeight = function(name, i, j, gradient) {
-    var m = this.momentWeight1[name][j] = this.beta1 * this.momentWeight1[name][j] + (1.0 - this.beta1) * gradient;
-    var v = this.momentWeight2[name][j] = Math.max(this.beta2 * this.momentWeight2[name][j], Math.abs(gradient));
+    var m = this.momentWeight1[name][i][j] = this.beta1 * this.momentWeight1[name][i][j] + (1.0 - this.beta1) * gradient;
+    var v = this.momentWeight2[name][j][j] = Math.max(this.beta2 * this.momentWeight2[name][i][j], Math.abs(gradient));
     var delta = this.alpha / (1.0 - Math.pow(this.beta1, this.iteration)) * m / (v + this.epsilon);
     return delta;
 };
+
+

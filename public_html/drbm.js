@@ -367,9 +367,9 @@ function DRBMOptimizer(drbm) {
     this.momentWeight1["xh"] = new Array(drbm.xsize);
     for(var i = 0; i < this.momentWeight1["xh"].length; i++)
          this.momentWeight1["xh"][i] = (new Float64Array(drbm.hsize)).fill(0.0);
-    this.momentWeight1["hy"] = new Array(drbm.xsize);
+    this.momentWeight1["hy"] = new Array(drbm.hsize);
     for(var j = 0; j < this.momentWeight1["hy"].length; j++)
-         this.momentWeight1["hy"][j] = (new Float64Array(drbm.hsize)).fill(0.0);
+         this.momentWeight1["hy"][j] = (new Float64Array(drbm.ysize)).fill(0.0);
 
     this.momentBias2 = {};
     this.momentBias2["h"] = (new Float64Array(drbm.hsize)).fill(0.0);
@@ -378,9 +378,9 @@ function DRBMOptimizer(drbm) {
     this.momentWeight2["xh"] = new Array(drbm.xsize);
     for(var i = 0; i < this.momentWeight2["xh"].length; i++)
          this.momentWeight2["xh"][i] = (new Float64Array(drbm.hsize)).fill(0.0);
-    this.momentWeight2["hy"] = new Array(drbm.xsize);
+    this.momentWeight2["hy"] = new Array(drbm.hsize);
     for(var j = 0; j < this.momentWeight2["hy"].length; j++)
-         this.momentWeight2["hy"][j] = (new Float64Array(drbm.hsize)).fill(0.0);
+         this.momentWeight2["hy"][j] = (new Float64Array(drbm.ysize)).fill(0.0);
 };
 
 DRBMOptimizer.prototype.deltaBias = function(name, index, gradient) {

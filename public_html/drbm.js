@@ -22,7 +22,7 @@ function DRBM(xsize, hsize, ysize) {
         this.weight["xh"][i] = (new Float64Array(hsize)).fill(0.0)
         this.weight["xh"][i] = this.weight["xh"][i].map(x=>{return Math.random() * 0.01})
     }
-    this.weight["hy"] = new Array(xsize);
+    this.weight["hy"] = new Array(hsize);
     for(var j = 0; j < this.weight["hy"].length; j++) {
         this.weight["hy"][j] = (new Float64Array(ysize)).fill(0.0);
         this.weight["hy"][j] = this.weight["hy"][j].map(x=>{return Math.random() * 0.01})

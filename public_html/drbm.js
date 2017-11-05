@@ -62,6 +62,18 @@ DRBM.prototype.muJK = function(hindex, yindex) {
     return value;
 };
 
+DRBM.prototype.muJKMatrix = function() {
+    var mujk = new Array(this.hsize);
+    for(var j = 0; j <this.hsize; j++) {
+        mujk[j] = new Float64Array(this.ysize)
+        for(var k = 0; k < this.ysize; k++) {
+            mujk[j][k] = this.muJK(j, k);
+        }
+    }
+    return mujk;
+};
+
+
 DRBM.prototype.condProbY = function(yindex) {
     var z_k = this.normalizeConstantDiv2H();
     var value = this.condProbYGivenZ(yindex, z_k);
@@ -93,6 +105,12 @@ DRBM.prototype.expectedValueXHGivenZ = function(xindex, hindex, z) {
     return value;
 };
 
+DRBM.prototype.expectedValueXHGivenZGivenMu = function(xindex, hindex, z, mujk) {
+    var value = this.node["x"][xindex] * this.expectedValueHGivenZGivenMu(hindex, z, mujk);
+    return value;
+};
+
+
 DRBM.prototype.expectedValueH = function(hindex) {
     var z = this.normalizeConstantDiv2H();
     var value = this.expectedValueHGivenZ(hindex, z);
@@ -111,6 +129,24 @@ DRBM.prototype.expectedValueHGivenZ = function(hindex, z) {
             k_val *= Math.cosh(this.muJK(l, k));
         }
         k_val *= Math.sinh(this.muJK(hindex, k));
+        value += k_val;
+    }
+    value /= z;
+    return value;
+};
+
+DRBM.prototype.expectedValueHGivenZGivenMu = function(hindex, z, mujk) {
+    var lindex = Array.from({
+        length: this.hsize
+    }, (v, k) => k);
+    lindex.splice(hindex, 1);
+    var value = 0.0;
+    for (var k = 0; k < this.ysize; k++) {
+        var k_val = Math.exp(this.bias["y"][k]);
+        for (var l of lindex) {
+            k_val *= Math.cosh(mujk[l][k]);
+        }
+        k_val *= Math.sinh(mujk[hindex][k]);
         value += k_val;
     }
     value /= z;
@@ -137,6 +173,20 @@ DRBM.prototype.expectedValueHYGivenZ = function(hindex, yindex, z) {
     return value;
 };
 
+DRBM.prototype.expectedValueHYGivenZGivenMu = function(hindex, yindex, z, mujk) {
+    var lindex = Array.from({
+        length: this.hsize
+    }, (v, k) => k);
+    lindex.splice(hindex, 1);
+    var value = Math.exp(this.bias["y"][yindex]);
+    for (var l of lindex) {
+        value *= Math.cosh(mujk[l][yindex]);
+    }
+    value *= Math.sinh(mujk[hindex][yindex]);
+    value /= z;
+    return value;
+};
+
 DRBM.prototype.expectedValueY = function(yindex) {
     var z = this.normalizeConstantDiv2H();
     var value = this.expectedValueYGivenZ(yindex, z);
@@ -150,6 +200,18 @@ DRBM.prototype.expectedValueYGivenZ = function(yindex, z) {
     var value = Math.exp(this.bias["y"][yindex]);
     for (var l of lindex) {
         value *= Math.cosh(this.muJK(l, yindex));
+    }
+    value /= z;
+    return value;
+};
+
+DRBM.prototype.expectedValueYGivenZGivenMu = function(yindex, z, mujk) {
+    var lindex = Array.from({
+        length: this.hsize
+    }, (v, k) => k);
+    var value = Math.exp(this.bias["y"][yindex]);
+    for (var l of lindex) {
+        value *= Math.cosh(mujk[l][yindex]);
     }
     value /= z;
     return value;
@@ -180,24 +242,26 @@ DRBMTrainer.prototype.train = function(drbm, data, learning_rate) {
     var z = drbm.normalizeConstantDiv2H();
     // Online Learning(SGD)
     // Gradient
+    var mujk = drbm.muJKMatrix()
+    
     for (var i = 0; i < drbm.xsize; i++) {
         for (var j = 0; j < drbm.hsize; j++) {
-            var gradient = this.dataMeanXH(drbm, data, i, j) - drbm.expectedValueXHGivenZ(i, j, z);
+            var gradient = this.dataMeanXH(drbm, data, i, j) - drbm.expectedValueXHGivenZGivenMu(i, j, z, mujk);
             this.gradientWeight["xh"][i][j] = gradient;
         }
     }
     for (var j = 0; j < drbm.hsize; j++) {
-        var gradient = this.dataMeanH(drbm, data, j) - drbm.expectedValueHGivenZ(j, z);
+        var gradient = this.dataMeanH(drbm, data, j) - drbm.expectedValueHGivenZGivenMu(j, z, mujk);
             this.gradientBias["h"][j] = gradient;
     }
     for (var j = 0; j < drbm.hsize; j++) {
         for (var k = 0; k < drbm.ysize; k++) {
-            var gradient = this.dataMeanHY(drbm, data, j, k) - drbm.expectedValueHYGivenZ(j, k, z);
+            var gradient = this.dataMeanHY(drbm, data, j, k) - drbm.expectedValueHYGivenZGivenMu(j, k, z, mujk);
             this.gradientWeight["hy"][j][k] = gradient;
         }
     }
     for (var k = 0; k < drbm.ysize; k++) {
-        var gradient = this.dataMeanY(drbm, data, k) - drbm.expectedValueYGivenZ(k, z);
+        var gradient = this.dataMeanY(drbm, data, k) - drbm.expectedValueYGivenZGivenMu(k, z, mujk);
         this.gradientBias["y"][k] = gradient;
     }
     

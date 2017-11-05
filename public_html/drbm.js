@@ -246,17 +246,17 @@ DRBMTrainer.prototype.train = function(drbm, data, learning_rate) {
     
     for (var i = 0; i < drbm.xsize; i++) {
         for (var j = 0; j < drbm.hsize; j++) {
-            var gradient = this.dataMeanXH(drbm, data, i, j) - drbm.expectedValueXHGivenZGivenMu(i, j, z, mujk);
+            var gradient = this.dataMeanXHGivenMu(drbm, data, i, j, mujk) - drbm.expectedValueXHGivenZGivenMu(i, j, z, mujk);
             this.gradientWeight["xh"][i][j] = gradient;
         }
     }
     for (var j = 0; j < drbm.hsize; j++) {
-        var gradient = this.dataMeanH(drbm, data, j) - drbm.expectedValueHGivenZGivenMu(j, z, mujk);
+        var gradient = this.dataMeanHGivenMu(drbm, data, j, mujk) - drbm.expectedValueHGivenZGivenMu(j, z, mujk);
             this.gradientBias["h"][j] = gradient;
     }
     for (var j = 0; j < drbm.hsize; j++) {
         for (var k = 0; k < drbm.ysize; k++) {
-            var gradient = this.dataMeanHY(drbm, data, j, k) - drbm.expectedValueHYGivenZGivenMu(j, k, z, mujk);
+            var gradient = this.dataMeanHYGivenMu(drbm, data, j, k, mujk) - drbm.expectedValueHYGivenZGivenMu(j, k, z, mujk);
             this.gradientWeight["hy"][j][k] = gradient;
         }
     }
@@ -308,6 +308,12 @@ DRBMTrainer.prototype.dataMeanXH = function(drbm, data, xindex, hindex) {
     return value;
 };
 
+DRBMTrainer.prototype.dataMeanXHGivenMu = function(drbm, data, xindex, hindex, mujk) {
+    var value = data.x[xindex] * Math.tanh(mujk[hindex][data.y]);
+    return value;
+};
+
+
 DRBMTrainer.prototype.dataMeanH = function(drbm, data, hindex) {
     var mu = drbm.bias["h"][hindex] + drbm.weight["hy"][hindex][data.y];
     for (var i = 0; i < drbm.xsize; i++) {
@@ -316,6 +322,12 @@ DRBMTrainer.prototype.dataMeanH = function(drbm, data, hindex) {
     var value = Math.tanh(mu);
     return value;
 };
+
+DRBMTrainer.prototype.dataMeanHGivenMu = function(drbm, data, hindex, mujk) {
+    var value = Math.tanh(mujk[hindex][data.y]);
+    return value;
+};
+
 
 DRBMTrainer.prototype.dataMeanHY = function(drbm, data, hindex, yindex) {
     if (yindex !== data.y) return 0.0;
@@ -326,6 +338,13 @@ DRBMTrainer.prototype.dataMeanHY = function(drbm, data, hindex, yindex) {
     var value = Math.tanh(mu);
     return value;
 };
+
+DRBMTrainer.prototype.dataMeanHYGivenMu = function(drbm, data, hindex, yindex, mujk) {
+    if (yindex !== data.y) return 0.0;
+    var value = Math.tanh(mujk[hindex][data.y]);
+    return value;
+};
+
 
 DRBMTrainer.prototype.dataMeanY = function(drbm, data, yindex) {
     var value = (yindex !== data.y) ? 0.0 : 1.0;

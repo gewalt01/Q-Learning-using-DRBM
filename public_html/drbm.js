@@ -94,6 +94,20 @@ DRBM.prototype.condProbYGivenZ = function(yindex, z) {
     return value;
 };
 
+DRBM.prototype.maxY = function() {
+    var z_k = this.normalizeConstantDiv2H();
+    var prob = [];
+    
+    for(int k = 0; k < this.ysize; k++) {
+        prob.push(this.condProbYGivenZ(k, z_k));
+    }
+    
+    var y = prob.indexOf(Math.max.apply(null,prob)) 
+    
+    return y;
+};
+
+
 DRBM.prototype.expectedValueXH = function(xindex, hindex) {
     var z = this.normalizeConstantDiv2H();
     var value = this.node["x"][xindex] * this.expectedValueHGivenZ(hindex, z);
